@@ -1,14 +1,17 @@
-# unit接口类，由于session_id的问题，无法写成独立的模块
+import urllib.request as urllib2
+import json
+
 class baidu_unit():
+    token = ''
 
     # service_id: 机器人id
-    # log_id: AppID? 技能ID? 
     # session_id: 实现多轮对话                  
+    # log_id: AppID? 技能ID?                        # ,\"skill_ids\":[\"1188690\"]
     post_data_prefix = "{\"version\":\"3.0\",\"service_id\":\"S69358\",\"session_id\":\"\",\"log_id\":\"26227257\",\"request\":{\"terminal_id\":\"88888\",\"query\":\""
 
     def fetch_token(self):
-        API_Key = ' '
-        Secret_Key = ' '
+        API_Key = ''
+        Secret_Key = ''
 
         host = f'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={API_Key}&client_secret={Secret_Key}'
         request = urllib2.Request(host)
@@ -33,8 +36,11 @@ class baidu_unit():
 
         content_json = json.loads(response.read().decode('utf8'))  # 转为dict
 
-        post_data_prefix = self.post_data_prefix[:53] + content_json['result']['session_id'] + self.post_data_prefix[53:]
+        # 处理session_id：第一次请求是，session_id 值为空，以后应该填上返回的值，如此才能实现多轮会话
+        if self.post_data_prefix[53] == '"':
+            self.post_data_prefix = self.post_data_prefix[:53] + content_json['result']['session_id'] + self.post_data_prefix[53:]
 
         reply = content_json['result']['responses'][0]['actions'][0]['say']  # 提取回答
+        print(f"[Bot]: {reply}")
 
         return reply
